@@ -1,12 +1,13 @@
 const postsContainer = document.querySelector(".posts-container");
 const searchDisplay = document.querySelector(".search-display");
-const core = "test";
-const url = `http://localhost:8983/solr/${core}/select`;
+const core = "movies";
+const request_handler = "suggest_topic"
+const url = `http://localhost:8983/solr/${core}/${request_handler}`;
 
 const handleSearchPosts = (query) => {
     const searchQuery = query.trim().toLowerCase();
 
-    if (searchQuery.length <= 1) {
+    if (searchQuery.length <= 2) {
         resetPosts()
         return
     }
@@ -26,14 +27,6 @@ const handleSearchPosts = (query) => {
                 search.style.color = "";
             }
         });
-
-    // if (searchResults.length == 0) {
-    //     searchDisplay.innerHTML = "No results found"
-    // } else if (searchResults.length == 1) {
-    //     searchDisplay.innerHTML = `1 result found for your query: ${query}`
-    // } else {
-    //     searchDisplay.innerHTML = `${searchResults.length} results found for your query: ${query}`
-    // }
 };
 
 const solrFetch = async (query) => {

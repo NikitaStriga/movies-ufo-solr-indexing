@@ -141,6 +141,30 @@
 	<field name="extract" type="text_general" indexed="true" stored="true" />
 
 
+    <field name="title_ngrams" type="title_ngrams_ft" indexed="true" stored="false"/>
+    <fieldType name="title_ngrams_ft" class="solr.TextField" multiValued="true">
+        <analyzer type="index">
+            <tokenizer name="standard"/>
+            <filter name="lowercase"/>
+<!--            <filter name="stop" ignoreCase="true" words="stopwords.txt" />-->
+            <filter name="asciiFolding" preserveOriginal="false" />
+            <filter name="englishPossessive"/>
+            <filter name="edgeNGram" minGramSize="3" maxGramSize="10"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer name="standard"/>
+            <filter name="lowercase"/>
+<!--            <filter name="stop" ignoreCase="true" words="stopwords.txt" />-->
+            <filter name="asciiFolding" preserveOriginal="false" />
+            <filter name="englishPossessive"/>
+        </analyzer>
+    </fieldType>
+
+    <field name="title_suggestions" type="text_general" indexed="true" stored="false" />
+
+    <copyField source="title" dest="title_ngrams"/>
+    <copyField source="title" dest="title_suggestions"/>
+
 
     <dynamicField name="*_i"   type="pint"     indexed="true"  stored="true"/>
     <dynamicField name="*_is"  type="pints"    indexed="true"  stored="true"/>
