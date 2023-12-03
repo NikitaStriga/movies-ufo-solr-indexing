@@ -1,8 +1,8 @@
 package org.example;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -33,20 +33,19 @@ public abstract class AbstractRunIndexation implements RunIndexation
             concurrentClient.commit(SOLR_CORE);
 
             long startMs = System.currentTimeMillis();
-            final Map<String, String> stringStringMap = new LinkedHashMap<>(addDocuments(concurrentClient));
-
-            // manually commit all documents
-            concurrentClient.commit(SOLR_CORE);
+            final Map<String, String> result = addDocuments(concurrentClient);
+            final Map<String, String> stringStringMap = new LinkedHashMap<>(result == null ? Collections.emptyMap() : result);
 
             // wait until all requests are processed by cuss
             concurrentClient.blockUntilFinished();
+            // manually commit all documents
+            concurrentClient.commit(SOLR_CORE);
+//            concurrentClient.optimize(SOLR_CORE);
+
             concurrentClient.shutdownNow();
 
-            if (stringStringMap != null)
-            {
-                stringStringMap.put("Operation took", Math.round(((System.currentTimeMillis() - startMs) / 1000f) * 100f) / 100f + " sec");
-                stringStringMap.entrySet().forEach(System.out::println);
-            }
+            stringStringMap.put("Operation took", Math.round(((System.currentTimeMillis() - startMs) / 1000f) * 100f) / 100f + " sec");
+            stringStringMap.entrySet().forEach(System.out::println);
         }
     }
 

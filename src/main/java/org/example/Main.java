@@ -2,6 +2,7 @@ package org.example;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -14,8 +15,8 @@ public class Main
                                                                                                :
                                                                                                System.getProperty("solr.base.url") + "/");
 
-    public static final int BATCH_SIZE = Optional.ofNullable(System.getProperty("batch.size")).map(Integer::parseInt).orElse(50);
-    public static final int UPDATE_THREADS_NUMBER = Optional.ofNullable(System.getProperty("update.threads.number")).map(Integer::parseInt).orElse(5);
+    public static final int BATCH_SIZE = Optional.ofNullable(System.getProperty("batch.size")).map(Integer::parseInt).orElse(500);
+    public static final int UPDATE_THREADS_NUMBER = Optional.ofNullable(System.getProperty("update.threads.number")).map(Integer::parseInt).orElse(1);
 
     public static final boolean BE_VERBOSE = Boolean.parseBoolean(System.getProperty("be.verbose"));
 
@@ -51,6 +52,8 @@ public class Main
             return;
         }
 
+        printInfo();
+
         // run indexation
         try
         {
@@ -61,6 +64,20 @@ public class Main
             System.err.println("Exception has occurred while indexing data:\n" + exception + "\n" + ExceptionUtils.getStackTrace(exception));
         }
 
+    }
+
+    private static void printInfo()
+    {
+        System.out.println("CONFIGURATION:");
+        final Map<String, Object> info = new LinkedHashMap<>();
+        info.put("  -   SOLR_BASE_URL (-Dsolr.base.url)", SOLR_BASE_URL);
+        info.put("  -   BATCH_SIZE (-Dbatch.size)", BATCH_SIZE);
+        info.put("  -   UPDATE_THREADS_NUMBER (-Dupdate.threads.number)", UPDATE_THREADS_NUMBER);
+        info.put("  -   DATA_SET (-Ddata.set)", DATA_SET);
+        info.put("  -   SOLR_CORE (-Dsolr.core)", SOLR_CORE);
+        info.put("  -   BE_VERBOSE (-Dbe.verbose)", BE_VERBOSE);
+        info.entrySet().forEach(System.out::println);
+        System.out.println("*******************************************");
     }
 
 }
