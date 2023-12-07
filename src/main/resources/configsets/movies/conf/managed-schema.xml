@@ -142,25 +142,39 @@
 
 
     <field name="title_ngrams" type="title_ngrams_ft" indexed="true" stored="false"/>
-    <fieldType name="title_ngrams_ft" class="solr.TextField" multiValued="true">
+    <fieldType name="title_ngrams_ft" class="solr.TextField" positionIncrementGap="100" multiValued="true">
         <analyzer type="index">
             <tokenizer name="standard"/>
             <filter name="lowercase"/>
-<!--            <filter name="stop" ignoreCase="true" words="stopwords.txt" />-->
+            <filter name="stop" ignoreCase="true" words="stopwords.txt" />
             <filter name="asciiFolding" preserveOriginal="false" />
             <filter name="englishPossessive"/>
-            <filter name="edgeNGram" minGramSize="3" maxGramSize="10"/>
+            <filter name="edgeNGram" minGramSize="3" maxGramSize="10" preserveOriginal="false"/>
         </analyzer>
         <analyzer type="query">
             <tokenizer name="standard"/>
             <filter name="lowercase"/>
-<!--            <filter name="stop" ignoreCase="true" words="stopwords.txt" />-->
+            <filter name="stop" ignoreCase="true" words="stopwords.txt" />
             <filter name="asciiFolding" preserveOriginal="false" />
             <filter name="englishPossessive"/>
         </analyzer>
     </fieldType>
 
-    <field name="title_suggestions" type="text_general" indexed="true" stored="false" />
+    <field name="title_suggestions" type="title_suggestions_ft" indexed="true" stored="false" />
+    <fieldType name="title_suggestions_ft" class="solr.TextField" positionIncrementGap="100" multiValued="true">
+        <analyzer type="index">
+            <tokenizer name="standard"/>
+            <filter name="lowercase"/>
+            <filter name="stop" ignoreCase="true" words="stopwords.txt" />
+            <filter name="asciiFolding" preserveOriginal="false" />
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer name="standard"/>
+            <filter name="lowercase"/>
+            <filter name="stop" ignoreCase="true" words="stopwords.txt" />
+            <filter name="asciiFolding" preserveOriginal="false" />
+        </analyzer>
+    </fieldType>
 
     <copyField source="title" dest="title_ngrams"/>
     <copyField source="title" dest="title_suggestions"/>

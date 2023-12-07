@@ -7,6 +7,7 @@ const url = `http://localhost:8983/solr/${core}/${request_handler}`;
 const handleSearchPosts = (query) => {
     const searchQuery = query.trim().toLowerCase();
 
+    console.log("vavd")
     if (searchQuery.length <= 2) {
         resetPosts()
         return
@@ -17,14 +18,18 @@ const handleSearchPosts = (query) => {
         {
             let result = '';
             x.response.docs.forEach(el => result = result + "<div>" + el.title + "</div>");
-            postsContainer.innerHTML=result;
             if (result === '')
             {
                 search.style.color = "red";
+                postsContainer.innerHTML="<pre>" + JSON.stringify(x, null, 3) + "</pre>"
+                postsContainer.style.color= "red";
             }
             else
             {
+                result = result + "<br>" + "<div style='color: red'>" + "Was found:" + x.response.numFound + "</div>";
+                postsContainer.innerHTML=result;
                 search.style.color = "";
+                postsContainer.style.color = "";
             }
         });
 };
@@ -54,7 +59,10 @@ search.addEventListener(
     "input",
     (event) => {
         const query = event.target.value;
-        debounce(() => handleSearchPosts(query), 50);
+        debounce(() => handleSearchPosts(query), 350);
     },
     false
 );
+
+// RELOAD core
+// http://localhost:8983/solr/admin/cores?action=RELOAD&core=movies

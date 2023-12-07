@@ -670,9 +670,88 @@
       <str name="defType">edismax</str>
       <str name="rows">10</str>
       <str name="fl">title</str>
-      <str name="qf">title_suggestions^10 title_ngrams</str>
+      <str name="qf">title_suggestions</str>
+
+      <str name="spellcheck">true</str>
+      <str name="spellcheck.dictionary">spellcheck_mil</str>
+      <!-- кол-во suggestions. Именно на основании suggestion составляются collation -->
+      <str name="spellcheck.count">5</str>
+      <!-- дополнительно покажет freq пар-р, указывающий frequency термина в индексе для поля, которое мы используем для
+       spellcheck -->
+      <str name="spellcheck.extendedResults">true</str>
+      <str name="spellcheck.collate">true</str>
+      <!-- без этого пар-ра collation особо не имеет значения, т.к. он не показывает collationQuery -->
+      <str name="spellcheck.collateExtendedResults">true</str>
+      <!-- макс число collations, которое может быть составлено из suggested терминов -->
+      <str name="spellcheck.maxCollations">3</str>
+      <!-- Кол-во запросов, которое мы разрешаем сделать для collationQuery для подсчета hits в collation секции,
+      без данного пар-ра все collation будут иметь hint=0 + нам могут предложить collation query, но это не значит, что она
+      даст результат, т.к. без проверки обычно этот запрос просто составляется из suggestion у которых больше всего freq.
+      Так же, если этот пар-р выставлен, то это максимальное кол-во
+      collation, которое будет показано (обычно maxCollation и maxCollationTries имеют одинаковое значение),
+      т.к. нет смысла показывать collation для которых не был отправлен запрос, потому что
+      hint всегда будет равен 0 в сравнении с collation для которых был отправлен запрос (collation не сортируются в завимости от hint,
+      т.е. может получиться, что 1-ый collation имеет hint=15, а второй 130, поэтому нужно проверять все, если мы хотим показать максимальный
+      например)
+      notes:
+       - обычно запросы выполняются с топовым (у которых больше всего freq терминами из suggestion секции), но например все документы, которые
+       имеют данные термины, могут быть отсечены fq пар-рами, тогда maxCollationTries может отработать впустую и ничего не вернуть, т.е. все
+       запросы отработают впустую
+       - для двух неправильно написанных терминов 'hery poter' получились collation с такими суммами freq из suggestion секции по
+       терминам 98, 67, 88, 75, 67, 64, 44, 47, 59, 54    т.е. примерно соблюдается порядок от большей суммы freq к меньшей
+      -->
+      <str name="spellcheck.maxCollationTries">3</str>
+      <!-- переопределяющие\дополнительные параметры могут быть указаны так -->
+<!--      <str name="spellcheck.collateParam.q.op">AND</str>-->
+
+      <!--
+      Принцип работы spellchecker:
+      Есть suggestions, например было введено 2 термина hery poter + spellcheck.count выставлен в 3. В итоге у нас по 3 suggested
+      термина на каждый термин (предполагается, что нету таких терминов hery или poter). Suggested термины сортируется в зависимости
+      от их freq в поле для spellcheck индекса, например результат в секции suggestions:
+        для hery -> here (54) hero (44) henry (31) и для poter -> power (44) peter (13) potter(10)
+      Затем, если у нас есть collation, то запросы почти всегда (это не точный алгоритм, но можно для простоты считать, что это так)
+      из suggestions терминов у которых наибольший freq, т.е. в данном примере
+      это будет 1)here + power (54+44) 2)hero+power(44+44) 3)henry+power(31+44) 4)here+peter(54+13) 5)hero+peter(31+44) ...
+      именно для этих collation затем будут выполнены запросы, но не больше maxCollationTries, например, если у нас maxCollationTries=4, то
+      будет выполнены первых 4 collation и если у нас есть fq пар-ры, который ограничивают например все термины из collation запросов, то
+      в результате мы ничего не вернем для collation, т.к. будут одни промахи (когда используется maxCollationTries, запрос из collation должен
+      возвратить хотя бы 1 элемент, чтобы collation был возвращен). Если пар-ра maxCollationTries не будет, то мы просто вернем кол-во
+      collation указанное в maxCollations, при этом при ручном выполнении запросов нам может ничего не вернуться, т.к. нет гарантии и solr
+      не проверял эти запросы как в случае с maxCollationTries пар-ром на реальном индексе с учетом всех fq пар-ров.
+      Ещё раз: стоит понимать, что maxCollationTries не гарантирует того, что он найдет что-либо, запросы могут отработать в холостую. Например
+      maxCollationTries = 3, тогда Solr возьмет первые 3 collation query и выполнит их, но например мы находимся на PLP и у нас выбрано 10 фасетов и в
+      финальном результате
+      у нас 5 документов, затем мы в search box неправильно написали термин и нам выдало множество терминов в suggestions секции (т.к. оно проверяет
+      во всех документах в этом поле), но т.к. у нас 5 документов (fq ограничило), то маловероятно, что в предложенных suggestion будут термины из этих документов
+      и с большой вероятность все maxCollationTries отработают в холостую и это стоит помнить. Т.е. вывод: при большом ограничении документов с помощью fq
+      параметров collation query да и сам spellcheck становится бесполезным.
+      -->
     </lst>
+    <arr name="last-components">
+      <str>spellcheck_mil</str>
+    </arr>
   </requestHandler>
+
+  <searchComponent name="spellcheck_mil" class="solr.SpellCheckComponent">
+    <str name="queryAnalyzerFieldType">title_suggestions_ft</str>
+
+    <lst name="spellchecker">
+      <str name="name">spellcheck_mil</str>
+      <str name="field">title_suggestions</str>
+      <str name="classname">solr.DirectSolrSpellChecker</str>
+      <str name="distanceMeasure">internal</str>
+      <float name="accuracy">0.5</float>
+      <int name="maxEdits">2</int>
+      <int name="minPrefix">1</int>
+<!--      <int name="maxInspections">5</int>-->
+      <int name="minQueryLength">4</int>
+      <int name="maxQueryLength">10</int>
+      <float name="maxQueryFrequency">0.01</float>
+<!--      <float name="thresholdTokenFrequency">.01</float>-->
+    </lst>
+  </searchComponent>
+
 
   <!-- Primary search handler, expected by most clients, examples and UI frameworks -->
   <requestHandler name="/select" class="solr.SearchHandler">
